@@ -61,7 +61,7 @@ class VinliTests:
         self.enroll(RESERVED_VEHICLE_ID, HTTPStatus.CREATED)
         self.enroll(RESERVED_VEHICLE_ID, HTTPStatus.NO_CONTENT, False, 'Unable to unenroll added vehicle.')
         # TODO: Ask if NOT_FOUND Is correct
-        self.enroll('123', HTTPStatus.NOT_FOUND, False, 'Should not be able to unenroll vehicle twice.')
+        self.enroll(RESERVED_VEHICLE_ID, HTTPStatus.NOT_FOUND, False, 'Should not be able to unenroll vehicle twice.')
 
         # Add tests of invalid IDs
 
