@@ -1,4 +1,13 @@
-#
+# Vinli QA Challenge
+# Corey McKenzie
+# corey.mckenzie@gmail.com
+
+# Notes:
+# 1. Rather than just assert for each error, I've collected the errors to report at the end. This allows us to see
+# multiple failures rather than having to fix each one before the next test can run.
+# 2. There is a lot left to test, but time did not permit. I've added some TODOs. Normally I'd also log to the console
+# or tag the test with "pending."
+
 import json
 import logging
 import time
