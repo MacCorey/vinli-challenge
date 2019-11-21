@@ -7,6 +7,7 @@
 # multiple failures rather than having to fix each one before the next test can run.
 # 2. There is a lot left to test, but time did not permit. I've added some TODOs. Normally I'd also log to the console
 # or tag the test with "pending."
+# 3. I'd normally have a framework to handle login and common functionality then break the tests into separate files.
 
 import json
 import logging
