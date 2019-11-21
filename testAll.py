@@ -1,14 +1,17 @@
-import logging
-import unittest
-import time
-from http import HTTPStatus
-import requests
+#
 import json
+import logging
+import time
+import unittest
+from http import HTTPStatus
+
+import requests
 
 BASE_URL = 'https://qa-api-challenge.herokuapp.com'
 ENROLL = '/api/v1/vehicles/{vehicleId}/odometer-alerts/_enroll'
 REPORT = BASE_URL + '/api/v1/odometer-alerts'
 RESERVED_VEHICLE_ID = '123'
+
 
 class VinliTests:
 
@@ -21,27 +24,39 @@ class VinliTests:
         assert len(self.errors) == 0, f'There were {len(self.errors)} failures: {self.errors}'
         logging.info(f'Test completed successfully in {time.perf_counter() - start_time} seconds.')
 
-    def test_enroll(self):
+    def test_enroll(self) -> None:
         good_values = ['0', '1', '02', '10', '0010', '100', '1000', '65530']
-        bad_values = ['', 'invalid', '\0', '-1', '100000000']
+        bad_values = ['', '1.1', 'invalid', '\0', '-1', '100000000']
 
         for vehicle_id in good_values:
-            self.enroll(vehicle_id, HTTPStatus.CREATED)
+            req = self.enroll(vehicle_id, HTTPStatus.CREATED)
+            json_data = json.loads(req.text)
+            enrollment = json_data.get('enrollment')
+            response_vehicle_id = enrollment.get('vehicleId')
+            if response_vehicle_id != vehicle_id:
+                self.log_and_append(
+                    f'Added vehicleId: {vehicle_id}, but response contained vehicleId: {response_vehicle_id}.')
+            if not enrollment.get('enrolled'):
+                self.log_and_append(f'Enrolled was not true for {vehicle_id}.')
+            # Should unenroll each vehicle
         # TODO: Ask if NOT_FOUND is the right status code for invalid vehicleIds.
         for vehicle_id in bad_values:
             self.enroll(vehicle_id, HTTPStatus.NOT_FOUND)
         # TODO: Ask if FORBIDDEN is the right status code for duplicates.
         for vehicle_id in good_values:
             self.enroll(vehicle_id, HTTPStatus.FORBIDDEN, 'Duplicates should be rejected.')
+        # Should unenroll any invalids that got added.
 
     # This is not comprehensive due to time constraints.
-    def test_unenroll(self):
+    def test_unenroll(self) -> None:
         self.enroll(RESERVED_VEHICLE_ID, HTTPStatus.CREATED)
         self.enroll(RESERVED_VEHICLE_ID, HTTPStatus.NO_CONTENT, False, 'Unable to unenroll added vehicle.')
         # TODO: Ask if NOT_FOUND Is correct
         self.enroll('123', HTTPStatus.NOT_FOUND, False, 'Should not be able to unenroll vehicle twice.')
 
-    # Due to time constraints this is not as comprehensive as it should be.
+        # Add tests of invalid IDs
+
+    # Due to time constraints this is not comprehensive.
     def test_report(self):
         fields = ['id', 'vehicleId', 'status', 'mileage', 'completedDate']
 
@@ -61,17 +76,21 @@ class VinliTests:
                         missing_item(field)
 
                 # Should check id is valid and same on multiple runs.
+                # Should check vehicleIds match those added
+                # Should check mileage never decreases
 
         # clean up
         self.enroll(RESERVED_VEHICLE_ID, HTTPStatus.NO_CONTENT, False, 'Unable to unenroll added vehicle.')
 
-    def enroll(self, vehicle_id: str, expected: int, should_enroll: bool = True, logging_details: str = ''):
+    def enroll(self, vehicle_id: str, expected: int, should_enroll: bool = True, logging_details: str = '') -> requests:
         if should_enroll:
             req = requests.post(self.make_url(ENROLL, vehicle_id))
         else:
             req = requests.delete(self.make_url(ENROLL, vehicle_id))
         if req.status_code != expected:
-            self.log_and_append(f'Expected status code {expected} for vehicleId: {vehicle_id}. Got {req.status_code}. {logging_details}')
+            self.log_and_append(
+                f'Expected status code {expected} for vehicleId: {vehicle_id}. Got {req.status_code}. {logging_details}')
+        return req
 
     @staticmethod
     def make_url(endpoint: str, vehicle_id: str) -> str:
